@@ -1,0 +1,30 @@
+name: Pipeline CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test-integration:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. Baixa o código do repositório
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # 2. Sobe o ambiente usando o seu Docker Compose com o Healthcheck
+    - name: Subir ambiente com Docker Compose
+      run: docker-compose up --build -d
+
+    # 3. Espera o backend ficar pronto (Healthcheck na prática)
+    - name: Aguardar o Backend inicializar
+      run: sleep 15 # Dá um tempo para o container estabilizar
+
+    # 4. EXECUTA O TESTE DE ROTA MÍNIMO EXIGIDO
+    - name: Testar rota da Fila (Teste de Integração Mínimo)
+      run: |
+        curl --fail http://localhost:3000/fila || exit 1
+        echo "A rota respondeu com sucesso! Teste de Integração Passou."
