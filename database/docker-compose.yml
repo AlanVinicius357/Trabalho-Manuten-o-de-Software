@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  database:
+    image: postgres:15-alpine
+    container_name: clinica_db
+    environment:
+      POSTGRES_USER: user_clinica
+      POSTGRES_PASSWORD: password_clinica
+      POSTGRES_DB: clinica_escola
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user_clinica -d clinica_escola"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - clinica-network
+
+  backend:
+    build: ./backend
+    container_name: clinica_backend
+    ports:
+      - "3000:3000"
+    environment:
+      DB_HOST: database
+      DB_USER: user_clinica
+      DB_PASSWORD: password_clinica
+      DB_NAME: clinica_escola
+    depends_on:
+      database:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/fila || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - clinica-network
+
+networks:
+  clinica-network:
+    driver: bridge
